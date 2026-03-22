@@ -1,0 +1,69 @@
+# =============================================================================
+# 阿里云函数计算 FC3 + Serverless Devs 应用描述（YAML 规范 edition 3.0.0）
+# 文档：https://docs.serverless-devs.com/user-guide/spec
+# FC3 示例：https://docs.serverless-devs.com/user-guide/aliyun/fc3/example/
+#
+# 【使用前】
+# 1. 安装 Serverless Devs CLI，并执行 `s config add` 配置密钥，别名与下方 access 一致。
+# 2. 本项目使用 Next.js standalone 部署（见 next.config.js 中 output: 'standalone'）。
+# 3. 部署前在根目录执行：npm install && npx prisma generate && npm run build:fc
+#    （build:fc = next build + 将 .next/static、public 拷入 standalone，供 FC 上传）
+# 5. 部署：s deploy -y （首次部署后控制台会分配可公网访问的临时测试域名）
+# =============================================================================
+
+edition: 3.0.0
+name: zen-merit
+access: default
+
+vars:
+  # 部署地域，可按需改为 cn-shanghai、cn-beijing 等
+  region: cn-hangzhou
+
+resources:
+  next:
+    component: fc3
+    props:
+      region: ${vars.region}
+      functionName: zen-merit-next
+      description: Next.js 14 禅意积功德（电子木鱼）
+      # 代码目录为项目根目录（与 s.yaml 同级）
+      code: ./
+      # 自定义运行时：由 HTTP 触发器将流量转发至下方 customRuntimeConfig.port
+      runtime: custom.debian10
+      # FC 控制台/接口仍要求填写 handler；自定义运行时实际进程由 command/args 启动
+      handler: index.handler
+      memorySize: 512
+      timeout: 60
+      # 仅对 custom / custom.debian10 等生效，适度并发可提升 Web 吞吐
+      instanceConcurrency: 10
+      internetAccess: true
+      environmentVariables:
+        NODE_ENV: production
+        PORT: '3000'
+        HOSTNAME: '0.0.0.0'
+      customRuntimeConfig:
+        # 与 Next 监听端口一致
+        port: 3000
+        # 启动 Next standalone 服务（需先完成 build 与静态资源拷贝）
+        command:
+          - sh
+        args:
+          - -c
+          - >-
+            exec node .next/standalone/server.js
+      triggers:
+        - triggerName: httpTrigger
+          triggerType: http
+          qualifier: LATEST
+          triggerConfig:
+            authType: anonymous
+            # false：不禁用公网 URL，部署后可使用平台分配的临时域名访问
+            disableURLInternet: false
+            methods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - HEAD
+              - PATCH
+              - OPTIONS

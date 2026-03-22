@@ -14,3 +14,7 @@
 ## 离线快速预览
 
 双击或在浏览器中打开根目录下的 **`quick-preview.html`**，可在不启动 Node 的情况下体验敲击与本地统计（数据仅存于浏览器，与正式版数据库不互通）。
+
+## 阿里云函数计算（Serverless Devs）
+
+根目录 **`s.yaml`** 为 FC3 资源描述（地域默认 `cn-hangzhou`，内存 512MB，超时 60s，HTTP 触发器端口 **3000**，公网临时域名需 `disableURLInternet: false`）。请先配置 `s config`，再执行 `npm run build:fc`，然后 `s deploy -y`。详情见 `s.yaml` 顶部注释。
