@@ -1,0 +1,25 @@
+// Prisma 数据模型：用户与功德记录（SQLite）
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  nickname  String   @default("禅修者")
+  createdAt DateTime @default(now())
+  meritRecords MeritRecord[]
+}
+
+model MeritRecord {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}

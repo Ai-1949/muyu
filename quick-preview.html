@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>禅意积功德 · 快速预览（本地演示）</title>
+  <!-- Chart.js：仅用于近七日柱状图，走公共 CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --paper: #f7f4ef;
+      --ink: #2c2825;
+      --mist: #8a8580;
+      --wood: #6b5344;
+      --wood-light: #a6907a;
+      --gold: #c9a227;
+      --gold-soft: #e8d48a;
+      --temple: #8b3a3a;
+      --temple-deep: #5c2424;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+      background: linear-gradient(180deg, var(--paper) 0%, #e8e2da 100%);
+      color: var(--ink);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .wrap {
+      max-width: 560px;
+      margin: 0 auto;
+      padding: 1rem 1rem 3rem;
+    }
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 600;
+      text-align: center;
+      letter-spacing: 0.08em;
+      margin: 0.5rem 0 0.25rem;
+    }
+    .sub {
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--mist);
+      line-height: 1.5;
+      margin-bottom: 1.25rem;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 999px;
+      background: rgba(201, 162, 39, 0.2);
+      color: var(--wood);
+      margin-left: 0.35rem;
+    }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: center;
+      margin-bottom: 1.25rem;
+    }
+    .toolbar button {
+      border: 1px solid rgba(107, 83, 68, 0.25);
+      background: rgba(255, 255, 255, 0.75);
+      color: var(--ink);
+      padding: 0.4rem 0.75rem;
+      border-radius: 0.5rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+    }
+    .toolbar button:hover { background: #fff; }
+    .toolbar button:active { transform: scale(0.97); }
+    .toolbar button.on {
+      background: linear-gradient(180deg, var(--wood) 0%, var(--wood-light) 100%);
+      color: var(--paper);
+      border-color: transparent;
+    }
+    .stage {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 220px;
+      margin-bottom: 1.5rem;
+    }
+    .tap-btn {
+      position: relative;
+      width: min(60vw, 280px);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      border: 1px solid rgba(107, 83, 68, 0.2);
+      cursor: pointer;
+      box-shadow: 0 8px 32px rgba(44, 40, 37, 0.1);
+      transition: transform 0.2s ease-out;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: "Songti SC", "Noto Serif SC", serif;
+      font-size: clamp(2.5rem, 10vw, 3.25rem);
+      font-weight: 600;
+      color: var(--wood);
+      overflow: visible;
+    }
+    .tap-btn.wood {
+      background: linear-gradient(145deg, rgba(166, 144, 122, 0.5) 0%, rgba(255, 248, 240, 0.9) 45%, rgba(107, 83, 68, 0.35) 100%);
+    }
+    .tap-btn.bell {
+      background: linear-gradient(145deg, #fff8e8 0%, rgba(232, 212, 138, 0.45) 50%, rgba(201, 162, 39, 0.35) 100%);
+      color: var(--temple-deep);
+    }
+    .tap-btn.pulse { transform: scale(1.2); }
+    .tap-hint {
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--mist);
+      margin-top: 0.75rem;
+    }
+    .particle {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      pointer-events: none;
+      bottom: 50%;
+      animation: floatUp 1s ease-out forwards;
+    }
+    .particle.gold {
+      background: linear-gradient(135deg, var(--gold-soft), var(--gold));
+      box-shadow: 0 0 12px rgba(201, 162, 39, 0.65);
+    }
+    .particle.chip {
+      background: linear-gradient(135deg, #fde68a, var(--wood-light));
+    }
+    @keyframes floatUp {
+      0% { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-48px) scale(0.55); }
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .stat-card {
+      background: rgba(255, 255, 255, 0.65);
+      border: 1px solid rgba(44, 40, 37, 0.06);
+      border-radius: 0.75rem;
+      padding: 0.75rem 0.5rem;
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(44, 40, 37, 0.06);
+    }
+    .stat-card .label {
+      font-size: 0.65rem;
+      letter-spacing: 0.12em;
+      color: var(--mist);
+      margin-bottom: 0.35rem;
+    }
+    .stat-card .num {
+      font-family: "Songti SC", "Noto Serif SC", serif;
+      font-size: 1.65rem;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+    .chart-box {
+      background: rgba(255, 255, 255, 0.65);
+      border: 1px solid rgba(44, 40, 37, 0.06);
+      border-radius: 0.75rem;
+      padding: 1rem;
+      box-shadow: 0 8px 32px rgba(44, 40, 37, 0.06);
+    }
+    .chart-box h2 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin: 0 0 0.75rem;
+      font-family: "Songti SC", "Noto Serif SC", serif;
+    }
+    .chart-inner { height: 200px; position: relative; }
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(44, 40, 37, 0.88);
+      color: var(--paper);
+      padding: 0.5rem 1rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+      z-index: 50;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>禅意积功德 <span class="badge">离线预览</span></h1>
+    <p class="sub">
+      双击本文件即可在浏览器中体验敲木鱼/钟、音效、震动与粒子效果。<br />
+      功德数据保存在本机浏览器（localStorage），与 Next 正式版后台不互通。
+    </p>
+
+    <div class="toolbar" id="toolbar">
+      <button type="button" data-group="mode" data-value="wood" class="on">木鱼</button>
+      <button type="button" data-group="mode" data-value="bell">铜钟</button>
+      <span style="width:100%;height:0"></span>
+      <button type="button" data-group="sound" data-value="wood" class="on">木鱼声</button>
+      <button type="button" data-group="sound" data-value="bell">钟声</button>
+      <button type="button" data-group="sound" data-value="mute">静音</button>
+      <button type="button" id="btnReset">清空本地数据</button>
+    </div>
+
+    <div class="stage" id="stage">
+      <div>
+        <button type="button" class="tap-btn wood" id="tapBtn" aria-label="敲击">魚</button>
+        <p class="tap-hint" id="tapHint">轻触木鱼，一声安定</p>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card">
+        <div class="label">今日功德</div>
+        <div class="num" id="nToday">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">总功德</div>
+        <div class="num" id="nTotal">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">连续天数</div>
+        <div class="num" id="nStreak">0</div>
+      </div>
+    </div>
+
+    <div class="chart-box">
+      <h2>近七日功德</h2>
+      <div class="chart-inner"><canvas id="chartCanvas" aria-label="近七日功德柱状图"></canvas></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status"></div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      /** localStorage 键：记录每次点击的时间戳（毫秒） */
+      var STORAGE_KEY = 'zen_merit_preview_taps';
+
+      /** 上海时区日历日 YYYY-MM-DD */
+      function shanghaiYmd(d) {
+        return new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'Asia/Shanghai',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+        }).format(d);
+      }
+
+      function todayYmd() {
+        return shanghaiYmd(new Date());
+      }
+
+      /** 日历日加减 */
+      function addDaysYmd(ymd, delta) {
+        var p = ymd.split('-').map(Number);
+        var dt = new Date(Date.UTC(p[0], p[1] - 1, p[2]));
+        dt.setUTCDate(dt.getUTCDate() + delta);
+        var y = dt.getUTCFullYear();
+        var m = String(dt.getUTCMonth() + 1).padStart(2, '0');
+        var day = String(dt.getUTCDate()).padStart(2, '0');
+        return y + '-' + m + '-' + day;
+      }
+
+      /** 最近 7 天日期（含今天），从旧到新 */
+      function last7Days() {
+        var t = todayYmd();
+        var out = [];
+        for (var i = 6; i >= 0; i--) out.push(addDaysYmd(t, -i));
+        return out;
+      }
+
+      function loadTaps() {
+        try {
+          var raw = localStorage.getItem(STORAGE_KEY);
+          var arr = raw ? JSON.parse(raw) : [];
+          return Array.isArray(arr) ? arr.filter(function (x) { return typeof x === 'number'; }) : [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function saveTaps(arr) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+      }
+
+      /** 从时间戳列表统计：今日、总计、连续天、七日数组 */
+      function computeStats(timestamps) {
+        var today = todayYmd();
+        var daySet = {};
+        var countByDay = {};
+        for (var i = 0; i < timestamps.length; i++) {
+          var ymd = shanghaiYmd(new Date(timestamps[i]));
+          daySet[ymd] = true;
+          countByDay[ymd] = (countByDay[ymd] || 0) + 1;
+        }
+        var todayCount = countByDay[today] || 0;
+        var total = timestamps.length;
+
+        var streak = 0;
+        if (daySet[today]) {
+          streak = 1;
+          var cursor = today;
+          while (true) {
+            var prev = addDaysYmd(cursor, -1);
+            if (daySet[prev]) {
+              streak++;
+              cursor = prev;
+            } else break;
+          }
+        }
+
+        var labels7 = last7Days();
+        var weekly = labels7.map(function (d) { return countByDay[d] || 0; });
+        return { todayCount: todayCount, total: total, streak: streak, weekly: weekly, labels7: labels7 };
+      }
+
+      /** 客户端限流：1 秒内最多 3 次 */
+      var tapWindow = [];
+      function allowTap() {
+        var now = Date.now();
+        tapWindow = tapWindow.filter(function (t) { return now - t < 1000; });
+        if (tapWindow.length >= 3) return false;
+        tapWindow.push(now);
+        return true;
+      }
+
+      var mode = 'wood';
+      var soundMode = 'wood';
+      var audioCtx = null;
+
+      function getAudioContext() {
+        var C = window.AudioContext || window.webkitAudioContext;
+        if (!C) return null;
+        if (!audioCtx) audioCtx = new C();
+        if (audioCtx.state === 'suspended') audioCtx.resume().catch(function () {});
+        return audioCtx;
+      }
+
+      /** 木鱼声：短促下调正弦 */
+      function playWood(ctx) {
+        var t0 = ctx.currentTime;
+        var osc = ctx.createOscillator();
+        var g = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(220, t0);
+        osc.frequency.exponentialRampToValueAtTime(90, t0 + 0.07);
+        g.gain.setValueAtTime(0.45, t0);
+        g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.14);
+        osc.connect(g);
+        g.connect(ctx.destination);
+        osc.start(t0);
+        osc.stop(t0 + 0.18);
+      }
+
+      /** 钟声：多谐波 */
+      function playBell(ctx) {
+        var t0 = ctx.currentTime;
+        var freqs = [523.25, 784.88, 1046.5];
+        for (var i = 0; i < freqs.length; i++) {
+          (function (f, idx) {
+            var osc = ctx.createOscillator();
+            var g = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = f;
+            var peak = 0.18 / (idx + 1);
+            g.gain.setValueAtTime(peak, t0);
+            g.gain.exponentialRampToValueAtTime(0.001, t0 + 1.2 + idx * 0.05);
+            osc.connect(g);
+            g.connect(ctx.destination);
+            osc.start(t0);
+            osc.stop(t0 + 1.4);
+          })(freqs[i], i);
+        }
+      }
+
+      function playSound() {
+        if (soundMode === 'mute') return;
+        var ctx = getAudioContext();
+        if (!ctx) return;
+        if (soundMode === 'bell') playBell(ctx);
+        else playWood(ctx);
+      }
+
+      var chartInstance = null;
+
+      function shortLabel(ymd) {
+        return ymd.slice(5).replace('-', '/');
+      }
+
+      function renderChart(weekly, labels7) {
+        var canvas = document.getElementById('chartCanvas');
+        if (!canvas || typeof Chart === 'undefined') return;
+        var labels = labels7.map(shortLabel);
+        if (chartInstance) chartInstance.destroy();
+        chartInstance = new Chart(canvas.getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: '当日功德',
+              data: weekly,
+              borderRadius: 8,
+              backgroundColor: 'rgba(201, 162, 39, 0.45)',
+              borderColor: 'rgba(201, 162, 39, 0.9)',
+              borderWidth: 1,
+            }],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { grid: { display: false }, ticks: { color: '#8a8580', maxRotation: 0 } },
+              y: {
+                beginAtZero: true,
+                ticks: { stepSize: 1, color: '#8a8580' },
+                grid: { color: 'rgba(44, 40, 37, 0.06)' },
+              },
+            },
+          },
+        });
+      }
+
+      /** 数字 0.3s 缓动 */
+      var animTimers = {};
+      function animateNumber(elId, target) {
+        var el = document.getElementById(elId);
+        if (!el) return;
+        var from = parseInt(el.textContent, 10) || 0;
+        if (from === target) return;
+        if (animTimers[elId]) cancelAnimationFrame(animTimers[elId]);
+        var start = performance.now();
+        var dur = 300;
+        function tick(now) {
+          var t = Math.min(1, (now - start) / dur);
+          var eased = 1 - Math.pow(1 - t, 3);
+          var val = Math.round(from + (target - from) * eased);
+          el.textContent = String(val);
+          if (t < 1) animTimers[elId] = requestAnimationFrame(tick);
+        }
+        animTimers[elId] = requestAnimationFrame(tick);
+      }
+
+      function showToast(msg) {
+        var t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        clearTimeout(showToast._h);
+        showToast._h = setTimeout(function () { t.classList.remove('show'); }, 2200);
+      }
+
+      function updateUI() {
+        var taps = loadTaps();
+        var s = computeStats(taps);
+        animateNumber('nToday', s.todayCount);
+        animateNumber('nTotal', s.total);
+        animateNumber('nStreak', s.streak);
+        renderChart(s.weekly, s.labels7);
+      }
+
+      function spawnParticles(container) {
+        var n = 3 + Math.floor(Math.random() * 3);
+        for (var i = 0; i < n; i++) {
+          var p = document.createElement('span');
+          p.className = 'particle ' + (Math.random() > 0.45 ? 'gold' : 'chip');
+          p.style.left = 42 + Math.random() * 16 + '%';
+          p.style.animationDelay = Math.random() * 0.08 + 's';
+          container.appendChild(p);
+          (function (node) {
+            setTimeout(function () { node.remove(); }, 1100);
+          })(p);
+        }
+      }
+
+      var tapBtn = document.getElementById('tapBtn');
+      var tapHint = document.getElementById('tapHint');
+      var stage = document.getElementById('stage');
+
+      tapBtn.addEventListener('click', function () {
+        if (!allowTap()) {
+          showToast('节奏慢一点，每秒最多三下哦');
+          return;
+        }
+        if (navigator.vibrate) navigator.vibrate(100);
+
+        tapBtn.classList.add('pulse');
+        setTimeout(function () { tapBtn.classList.remove('pulse'); }, 200);
+
+        playSound();
+        spawnParticles(stage);
+
+        var taps = loadTaps();
+        taps.push(Date.now());
+        saveTaps(taps);
+        updateUI();
+      });
+
+      function setMode(m) {
+        mode = m;
+        tapBtn.classList.remove('wood', 'bell');
+        tapBtn.classList.add(mode === 'bell' ? 'bell' : 'wood');
+        tapBtn.textContent = mode === 'bell' ? '钟' : '魚';
+        tapHint.textContent = mode === 'bell' ? '轻触钟面，一声清音' : '轻触木鱼，一声安定';
+      }
+
+      document.getElementById('toolbar').addEventListener('click', function (e) {
+        var btn = e.target.closest('button');
+        if (!btn || !btn.dataset.group) return;
+        var g = btn.dataset.group;
+        var v = btn.dataset.value;
+        document.querySelectorAll('[data-group="' + g + '"]').forEach(function (b) {
+          b.classList.toggle('on', b === btn);
+        });
+        if (g === 'mode') setMode(v);
+        if (g === 'sound') soundMode = v;
+      });
+
+      document.getElementById('btnReset').addEventListener('click', function () {
+        if (confirm('确定清空本页保存的功德记录？')) {
+          localStorage.removeItem(STORAGE_KEY);
+          tapWindow = [];
+          updateUI();
+          showToast('已清空');
+        }
+      });
+
+      setMode('wood');
+      updateUI();
+    })();
+  </script>
+</body>
+</html>
